@@ -1,0 +1,1 @@
+{"version":3,"names":["useSharedValue","useAnimatedValue","initialValue"],"sourceRoot":"../../src","sources":["useAnimatedValue.tsx"],"mappings":";;AAAA;AACA,SAASA,cAAc,QAAQ,yBAAyB;AAExD,OAAO,SAASC,gBAAgBA,CAACC,YAAoB,EAAE;EACrD,OAAOF,cAAc,CAACE,YAAY,CAAC;AACrC","ignoreList":[]}
