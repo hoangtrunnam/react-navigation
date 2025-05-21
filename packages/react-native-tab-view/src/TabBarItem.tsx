@@ -14,9 +14,11 @@ import useLatestCallback from 'use-latest-callback';
 import { PlatformPressable } from './PlatformPressable';
 import { TabBarItemLabel } from './TabBarItemLabel';
 import type { NavigationState, Route, TabDescriptor } from './types';
+import type { SharedValue } from 'react-native-reanimated';
 
 export type Props<T extends Route> = TabDescriptor<T> & {
   position: Animated.AnimatedInterpolation<number>;
+  reanimatedPosition?: SharedValue<number>;
   route: T;
   navigationState: NavigationState<T>;
   activeColor?: string;
