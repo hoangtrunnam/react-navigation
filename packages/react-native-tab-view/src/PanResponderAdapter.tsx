@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as Reanimated from 'react-native-reanimated';
 import {
   Animated,
   type GestureResponderEvent,
@@ -20,6 +21,9 @@ import type {
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
 
+import type { SharedValue } from 'react-native-reanimated';
+import { useSharedValue } from 'react-native-reanimated';
+
 type Props<T extends Route> = PagerProps & {
   layout: Layout;
   onIndexChange: (index: number) => void;
@@ -35,6 +39,7 @@ type Props<T extends Route> = PagerProps & {
       // Callback to call when switching the tab
       // The tab switch animation is performed even if the index in state is unchanged
       jumpTo: (key: string) => void;
+      reanimatedPosition?: SharedValue<number>;
     }
   ) => React.ReactElement;
 };
@@ -65,6 +70,8 @@ export function PanResponderAdapter<T extends Route>({
   const { routes, index } = navigationState;
 
   const panX = useAnimatedValue(0);
+  const panXReanimated = useSharedValue(0);
+  const panXOffset = useSharedValue(0);
 
   const listenersRef = React.useRef<Listener[]>([]);
 
@@ -73,7 +80,7 @@ export function PanResponderAdapter<T extends Route>({
   const onIndexChangeRef = React.useRef(onIndexChange);
 
   const currentIndexRef = React.useRef(index);
-  const pendingIndexRef = React.useRef<number>(undefined);
+  const pendingIndexRef = React.useRef<number | undefined>(undefined);
 
   const swipeVelocityThreshold = 0.15;
   const swipeDistanceThreshold = layout.width / 1.75;
@@ -97,9 +104,28 @@ export function PanResponderAdapter<T extends Route>({
             pendingIndexRef.current = undefined;
           }
         });
+
+        // Animate panXReanimated using Reanimated
+        panXReanimated.value = Reanimated.withSpring(
+          offset, 
+          {
+            damping: transitionConfig.damping,
+            mass: transitionConfig.mass,
+            stiffness: transitionConfig.stiffness,
+            overshootClamping: transitionConfig.overshootClamping,
+          },
+          (finished) => {
+            if (finished) {
+              // Reanimated.runOnJS(onIndexChangeRef.current)(index);
+              // Reanimated.runOnJS(() => { pendingIndexRef.current = undefined; })();
+            }
+          }
+        );
+
         pendingIndexRef.current = index;
       } else {
         panX.setValue(offset);
+        panXReanimated.value = offset;
         onIndexChangeRef.current(index);
         pendingIndexRef.current = undefined;
       }
@@ -114,9 +140,9 @@ export function PanResponderAdapter<T extends Route>({
 
   React.useEffect(() => {
     const offset = -navigationStateRef.current.index * layout.width;
-
     panX.setValue(offset);
-  }, [layout.width, panX]);
+    panXReanimated.value = offset;
+  }, [layout.width, panX, panXReanimated]);
 
   React.useEffect(() => {
     if (keyboardDismissMode === 'auto') {
@@ -165,8 +191,12 @@ export function PanResponderAdapter<T extends Route>({
     }
 
     panX.stopAnimation();
+    Reanimated.cancelAnimation(panXReanimated);
+    panXOffset.value = panXReanimated.value;
     // @ts-expect-error: _value is private, but docs use it as well
     panX.setOffset(panX._value);
+    // @ts-expect-error: _value is private, but docs use it as well
+    panXReanimated.value = panX._value;
   };
 
   const respondToGesture = (
@@ -195,8 +225,9 @@ export function PanResponderAdapter<T extends Route>({
         listenersRef.current.forEach((listener) => listener(next));
       }
     }
-
     panX.setValue(diffX);
+      // @ts-expect-error: _offset is private, but docs use it as well
+    panXReanimated.value = panX._offset + diffX;
   };
 
   const finishGesture = (
@@ -204,6 +235,9 @@ export function PanResponderAdapter<T extends Route>({
     gestureState: PanResponderGestureState
   ) => {
     panX.flattenOffset();
+
+    panXReanimated.value = panXOffset.value + (panXReanimated.value - panXOffset.value);
+    panXOffset.value = 0;
 
     onSwipeEnd?.();
 
@@ -241,6 +275,7 @@ export function PanResponderAdapter<T extends Route>({
 
     jumpToIndex(nextIndex, true);
   };
+
 
   const addEnterListener = useLatestCallback((listener: Listener) => {
     listenersRef.current.push(listener);
@@ -283,13 +318,28 @@ export function PanResponderAdapter<T extends Route>({
     layoutDirection === 'rtl' ? -1 : 1
   );
 
+  const reanimatedTranslateX = React.useMemo(() => {
+    return Reanimated.useDerivedValue(() => {
+      const interpolatedValue = Math.max(-maxTranslate, Math.min(0, panXReanimated.value));
+      return interpolatedValue * (layoutDirection === 'rtl' ? -1 : 1);
+    });
+  }, [maxTranslate, panXReanimated, layoutDirection]);
+
   const position = React.useMemo(
     () => (layout.width ? Animated.divide(panX, -layout.width) : null),
     [layout.width, panX]
   );
 
+  const reanimatedPosition = React.useMemo(() => {
+    return Reanimated.useDerivedValue(() => {
+      return layout.width ? panXReanimated.value / (-layout.width) : index;
+    });
+  }, [layout.width, panXReanimated, index]);
+
+
   return children({
     position: position ?? new Animated.Value(index),
+    reanimatedPosition,
     addEnterListener,
     jumpTo,
     render: (children) => (

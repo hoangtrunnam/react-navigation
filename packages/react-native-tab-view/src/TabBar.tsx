@@ -32,6 +32,7 @@ import type {
   TabDescriptor,
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
+import type { SharedValue } from 'react-native-reanimated';
 
 export type Props<T extends Route> = SceneRendererProps & {
   navigationState: NavigationState<T>;
@@ -57,6 +58,7 @@ export type Props<T extends Route> = SceneRendererProps & {
   gap?: number;
   testID?: string;
   android_ripple?: PressableAndroidRippleConfig;
+  reanimatedPosition?: SharedValue<number>;
 };
 
 const useNativeDriver = Platform.OS !== 'web';
@@ -356,6 +358,7 @@ export function TabBar<T extends Route>({
   testID,
   android_ripple,
   options,
+  reanimatedPosition,
 }: Props<T>) {
   const [layout, setLayout] = React.useState<Layout>(
     propLayout ?? { width: 0, height: 0 }
@@ -522,6 +525,7 @@ export function TabBar<T extends Route>({
         ...rest,
         key: route.key,
         position,
+        reanimatedPosition,
         route,
         navigationState,
         testID,
@@ -553,6 +557,7 @@ export function TabBar<T extends Route>({
     },
     [
       position,
+      reanimatedPosition,
       navigationState,
       options,
       activeColor,
@@ -633,6 +638,7 @@ export function TabBar<T extends Route>({
       >
         {renderIndicator({
           position,
+          reanimatedPosition,
           layout,
           navigationState,
           jumpTo,
