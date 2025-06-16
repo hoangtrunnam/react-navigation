@@ -129,17 +129,10 @@ export function TabView<T extends Route>({
         style={pagerStyle}
         layoutDirection={direction}
       >
-        {({
-          position,
-          render,
-          addEnterListener,
-          jumpTo,
-          reanimatedPosition,
-        }) => {
+        {({ render, addEnterListener, jumpTo, reanimatedPosition }) => {
           // All the props here must not change between re-renders
           // This is crucial to optimizing the routes with PureComponent
           const sceneRendererProps = {
-            position,
             layout,
             jumpTo,
             reanimatedPosition,

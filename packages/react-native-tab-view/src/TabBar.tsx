@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {
-  Animated,
   type DimensionValue,
   FlatList,
   I18nManager,
@@ -14,7 +13,10 @@ import {
   type ViewStyle,
   type ViewToken,
 } from 'react-native';
-import type { SharedValue } from 'react-native-reanimated';
+// eslint-disable-next-line import-x/no-extraneous-dependencies
+import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
+// eslint-disable-next-line import-x/no-extraneous-dependencies
+import { type SharedValue, useDerivedValue } from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import {
@@ -60,8 +62,6 @@ export type Props<T extends Route> = SceneRendererProps & {
   android_ripple?: PressableAndroidRippleConfig;
   reanimatedPosition?: SharedValue<number>;
 };
-
-const useNativeDriver = Platform.OS !== 'web';
 
 const Separator = ({ width }: { width: number }) => {
   return <View style={{ width }} />;
@@ -154,18 +154,6 @@ const getComputedTabWidth = (
 
 const getMaxScrollDistance = (tabBarWidth: number, layoutWidth: number) =>
   tabBarWidth - layoutWidth;
-
-const getTranslateX = (
-  scrollAmount: Animated.Value,
-  maxScrollDistance: number,
-  direction: LocaleDirection
-) =>
-  Animated.multiply(
-    Platform.OS === 'android' && direction === 'rtl'
-      ? Animated.add(maxScrollDistance, Animated.multiply(scrollAmount, -1))
-      : scrollAmount,
-    direction === 'rtl' ? 1 : -1
-  );
 
 const getTabBarWidth = <T extends Route>({
   navigationState,
@@ -339,7 +327,6 @@ export function TabBar<T extends Route>({
   scrollEnabled,
   jumpTo,
   navigationState,
-  position,
   activeColor,
   bounces,
   contentContainerStyle,
@@ -437,15 +424,16 @@ export function TabBar<T extends Route>({
       convertPaddingPercentToSize(flattenedPaddingEnd, layout)
   );
 
-  const translateX = React.useMemo(
-    () =>
-      getTranslateX(
-        scrollAmount,
-        getMaxScrollDistance(tabBarWidth, layout.width),
-        direction
-      ),
-    [direction, layout.width, scrollAmount, tabBarWidth]
-  );
+  const translateX = useDerivedValue(() => {
+    'worklet';
+    const baseValue =
+      Platform.OS === 'android' && direction === 'rtl'
+        ? getMaxScrollDistance(tabBarWidth, layout.width) +
+          scrollAmount.value * -1
+        : scrollAmount.value;
+
+    return baseValue * (direction === 'rtl' ? 1 : -1);
+  }, [scrollAmount, tabBarWidth, layout.width, direction]);
 
   const renderItem = React.useCallback(
     ({ item: route, index }: ListRenderItemInfo<T>) => {
@@ -524,7 +512,6 @@ export function TabBar<T extends Route>({
       const props = {
         ...rest,
         key: route.key,
-        position,
         reanimatedPosition,
         route,
         navigationState,
@@ -556,7 +543,6 @@ export function TabBar<T extends Route>({
       );
     },
     [
-      position,
       reanimatedPosition,
       navigationState,
       options,
@@ -591,18 +577,13 @@ export function TabBar<T extends Route>({
     [contentContainerStyle, scrollEnabled, tabBarWidth]
   );
 
-  const handleScroll = React.useMemo(
-    () =>
-      Animated.event(
-        [
-          {
-            nativeEvent: {
-              contentOffset: { x: scrollAmount },
-            },
-          },
-        ],
-        { useNativeDriver }
-      ),
+  const handleScroll = useAnimatedScrollHandler(
+    {
+      onScroll: (event) => {
+        'worklet';
+        scrollAmount.value = event.contentOffset.x;
+      },
+    },
     [scrollAmount]
   );
 
@@ -637,7 +618,6 @@ export function TabBar<T extends Route>({
         ]}
       >
         {renderIndicator({
-          position,
           reanimatedPosition,
           layout,
           navigationState,
@@ -670,7 +650,7 @@ export function TabBar<T extends Route>({
       </Animated.View>
       <View style={styles.scroll}>
         <Animated.FlatList
-          data={routes as Animated.WithAnimatedValue<T>[]}
+          data={routes as any[]}
           keyExtractor={keyExtractor}
           horizontal
           role="tablist"

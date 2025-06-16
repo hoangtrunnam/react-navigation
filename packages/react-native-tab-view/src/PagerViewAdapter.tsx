@@ -1,6 +1,6 @@
 /* eslint-disable import-x/no-extraneous-dependencies */
 import * as React from 'react';
-import { Animated, Keyboard, StyleSheet } from 'react-native';
+import { Keyboard, StyleSheet } from 'react-native';
 import ViewPager, {
   type PageScrollStateChangedNativeEvent,
 } from 'react-native-pager-view';
@@ -8,8 +8,9 @@ import {
   type SharedValue,
   useDerivedValue,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
-// import Reanimated from 'react-native-reanimated';
+import Reanimated from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import type {
@@ -21,17 +22,14 @@ import type {
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
 
-const AnimatedViewPager = Animated.createAnimatedComponent(ViewPager);
-// const ReAnimatedViewPager = Reanimated.createAnimatedComponent(ViewPager);
+// const AnimatedViewPager = Animated.createAnimatedComponent(ViewPager);
+const AnimatedViewPager = Reanimated.createAnimatedComponent(ViewPager);
 
 type Props<T extends Route> = PagerProps & {
   onIndexChange: (index: number) => void;
   navigationState: NavigationState<T>;
   children: (
     props: EventEmitterProps & {
-      // Animated value which represents the state of current index
-      // It can include fractional digits as it represents the intermediate value
-      position: Animated.AnimatedInterpolation<number>;
       // Reanimated shared value which represents the position
       reanimatedPosition?: SharedValue<number>;
       // Function to actually render the content of the pager
@@ -66,8 +64,8 @@ export function PagerViewAdapter<T extends Route>({
 
   const position = useAnimatedValue(index);
   const positionReanimated = useSharedValue(index);
-  const offset = useAnimatedValue(0);
   const offsetReanimated = useSharedValue(0);
+  const smoothPosition = useSharedValue(index);
 
   React.useEffect(() => {
     navigationStateRef.current = navigationState;
@@ -82,7 +80,6 @@ export function PagerViewAdapter<T extends Route>({
       pagerRef.current?.setPage(index);
     } else {
       pagerRef.current?.setPageWithoutAnimation(index);
-      position.setValue(index);
       positionReanimated.value = index;
     }
 
@@ -99,7 +96,6 @@ export function PagerViewAdapter<T extends Route>({
         pagerRef.current?.setPage(index);
       } else {
         pagerRef.current?.setPageWithoutAnimation(index);
-        position.setValue(index);
         positionReanimated.value = index;
       }
     }
@@ -121,17 +117,6 @@ export function PagerViewAdapter<T extends Route>({
         onSwipeEnd?.();
         return;
       case 'dragging': {
-        const subscription = offset.addListener(({ value }) => {
-          const next =
-            index + (value > 0 ? Math.ceil(value) : Math.floor(value));
-
-          if (next !== index) {
-            listenersRef.current.forEach((listener) => listener(next));
-          }
-
-          offset.removeListener(subscription);
-        });
-
         onSwipeStart?.();
         return;
       }
@@ -150,17 +135,26 @@ export function PagerViewAdapter<T extends Route>({
     };
   });
 
-  const memoizedPosition = React.useMemo(
-    () => Animated.add(position, offset),
-    [offset, position]
-  );
-
   const memoizedPositionReanimated = useDerivedValue(() => {
-    return positionReanimated.value + offsetReanimated.value;
+    const targetValue = positionReanimated.value + offsetReanimated.value;
+
+    // Chỉ apply spring khi có sự thay đổi lớn (jump)
+    const diff = Math.abs(targetValue - smoothPosition.value);
+    if (diff > 0.03) {
+      // Threshold để detect jump
+      smoothPosition.value = withSpring(targetValue, {
+        damping: 50,
+        stiffness: 400,
+        mass: 0.5,
+      });
+    } else {
+      smoothPosition.value = targetValue;
+    }
+
+    return smoothPosition.value;
   }, [positionReanimated, offsetReanimated]);
 
   return children({
-    position: memoizedPosition,
     reanimatedPosition: memoizedPositionReanimated,
     addEnterListener,
     jumpTo,

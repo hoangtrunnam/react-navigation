@@ -1,6 +1,8 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { Animated, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+// eslint-disable-next-line import-x/no-extraneous-dependencies
+import Animated from 'react-native-reanimated';
 
 interface TabBarItemLabelProps {
   color: string;

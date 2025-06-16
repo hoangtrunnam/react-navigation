@@ -18,13 +18,12 @@ const SceneComponent = React.memo(
 SceneComponent.displayName = 'SceneComponent';
 
 export function SceneMap<T>(scenes: { [key: string]: React.ComponentType<T> }) {
-  return ({ route, jumpTo, position, reanimatedPosition }: SceneProps) => (
+  return ({ route, jumpTo, reanimatedPosition }: SceneProps) => (
     <SceneComponent
       key={route.key}
       component={scenes[route.key]}
       route={route}
       jumpTo={jumpTo}
-      position={position}
       reanimatedPosition={reanimatedPosition}
     />
   );
