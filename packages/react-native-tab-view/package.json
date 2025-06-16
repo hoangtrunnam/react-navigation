@@ -24,7 +24,7 @@
   },
   "homepage": "https://reactnavigation.org/docs/tab-view/",
   "source": "./src/index.tsx",
-  "main": "./lib/module/index.js",
+  "main": "./src/index.tsx",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
     ".": {

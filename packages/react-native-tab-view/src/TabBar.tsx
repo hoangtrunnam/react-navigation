@@ -14,6 +14,7 @@ import {
   type ViewStyle,
   type ViewToken,
 } from 'react-native';
+import type { SharedValue } from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import {
@@ -32,7 +33,6 @@ import type {
   TabDescriptor,
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
-import type { SharedValue } from 'react-native-reanimated';
 
 export type Props<T extends Route> = SceneRendererProps & {
   navigationState: NavigationState<T>;
