@@ -1,5 +1,4 @@
 import * as React from 'react';
-import * as Reanimated from 'react-native-reanimated';
 import {
   Animated,
   type GestureResponderEvent,
@@ -9,6 +8,11 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import type { SharedValue } from 'react-native-reanimated';
+// eslint-disable-next-line import-x/no-extraneous-dependencies
+import * as Reanimated from 'react-native-reanimated';
+// eslint-disable-next-line import-x/no-extraneous-dependencies
+import { useSharedValue } from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import type {
@@ -20,9 +24,6 @@ import type {
   Route,
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
-
-import type { SharedValue } from 'react-native-reanimated';
-import { useSharedValue } from 'react-native-reanimated';
 
 type Props<T extends Route> = PagerProps & {
   layout: Layout;
@@ -110,7 +111,7 @@ export function PanResponderAdapter<T extends Route>({
 
         // Animate panXReanimated using Reanimated
         panXReanimated.value = Reanimated.withSpring(
-          offset, 
+          offset,
           {
             damping: transitionConfig.damping,
             mass: transitionConfig.mass,
@@ -231,7 +232,7 @@ export function PanResponderAdapter<T extends Route>({
       }
     }
     panX.setValue(diffX);
-      // @ts-expect-error: _offset is private, but docs use it as well
+    // @ts-expect-error: _offset is private, but docs use it as well
     panXReanimated.value = panX._offset + diffX;
   };
 
@@ -241,7 +242,8 @@ export function PanResponderAdapter<T extends Route>({
   ) => {
     panX.flattenOffset();
 
-    panXReanimated.value = panXOffset.value + (panXReanimated.value - panXOffset.value);
+    panXReanimated.value =
+      panXOffset.value + (panXReanimated.value - panXOffset.value);
     panXOffset.value = 0;
 
     onSwipeEnd?.();
@@ -280,7 +282,6 @@ export function PanResponderAdapter<T extends Route>({
 
     jumpToIndex(nextIndex, true);
   };
-
 
   const addEnterListener = useLatestCallback((listener: Listener) => {
     listenersRef.current.push(listener);
@@ -323,24 +324,13 @@ export function PanResponderAdapter<T extends Route>({
     layoutDirection === 'rtl' ? -1 : 1
   );
 
-  const reanimatedTranslateX = React.useMemo(() => {
-    return Reanimated.useDerivedValue(() => {
-      const interpolatedValue = Math.max(-maxTranslate, Math.min(0, panXReanimated.value));
-      return interpolatedValue * (layoutDirection === 'rtl' ? -1 : 1);
-    });
-  }, [maxTranslate, panXReanimated, layoutDirection]);
-
   const position = React.useMemo(
     () => (layout.width ? Animated.divide(panX, -layout.width) : null),
     [layout.width, panX]
   );
-
-  const reanimatedPosition = React.useMemo(() => {
-    return Reanimated.useDerivedValue(() => {
-      return layout.width ? panXReanimated.value / (-layout.width) : index;
-    });
+  const reanimatedPosition = Reanimated.useDerivedValue(() => {
+    return layout.width ? panXReanimated.value / -layout.width : index;
   }, [layout.width, panXReanimated, index]);
-
 
   return children({
     position: position ?? new Animated.Value(index),

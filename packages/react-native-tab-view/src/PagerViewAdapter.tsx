@@ -1,8 +1,15 @@
+/* eslint-disable import-x/no-extraneous-dependencies */
 import * as React from 'react';
-import { Animated, Keyboard, Platform, StyleSheet } from 'react-native';
+import { Animated, Keyboard, StyleSheet } from 'react-native';
 import ViewPager, {
   type PageScrollStateChangedNativeEvent,
 } from 'react-native-pager-view';
+import {
+  type SharedValue,
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
+// import Reanimated from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import type {
@@ -14,12 +21,8 @@ import type {
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
 
-import { type SharedValue, useDerivedValue, useSharedValue } from 'react-native-reanimated';
-import Reanimated, {
-} from 'react-native-reanimated';
-
 const AnimatedViewPager = Animated.createAnimatedComponent(ViewPager);
-const ReAnimatedViewPager = Reanimated.createAnimatedComponent(ViewPager);
+// const ReAnimatedViewPager = Reanimated.createAnimatedComponent(ViewPager);
 
 type Props<T extends Route> = PagerProps & {
   onIndexChange: (index: number) => void;
@@ -41,8 +44,6 @@ type Props<T extends Route> = PagerProps & {
     }
   ) => React.ReactElement;
 };
-
-const useNativeDriver = Platform.OS !== 'web';
 
 export function PagerViewAdapter<T extends Route>({
   keyboardDismissMode = 'auto',
@@ -69,7 +70,6 @@ export function PagerViewAdapter<T extends Route>({
   const positionReanimated = useSharedValue(index);
   const offset = useAnimatedValue(0);
   const offsetReanimated = useSharedValue(0);
-
 
   React.useEffect(() => {
     navigationStateRef.current = navigationState;
@@ -105,7 +105,13 @@ export function PagerViewAdapter<T extends Route>({
         positionReanimated.value = index;
       }
     }
-  }, [keyboardDismissMode, index, animationEnabled, position, positionReanimated]);
+  }, [
+    keyboardDismissMode,
+    index,
+    animationEnabled,
+    position,
+    positionReanimated,
+  ]);
 
   const onPageScrollStateChanged = (
     state: PageScrollStateChangedNativeEvent
@@ -151,10 +157,9 @@ export function PagerViewAdapter<T extends Route>({
     [offset, position]
   );
 
-
   const memoizedPositionReanimated = useDerivedValue(() => {
     return positionReanimated.value + offsetReanimated.value;
-  });
+  }, [positionReanimated, offsetReanimated]);
 
   return children({
     position: memoizedPosition,
@@ -172,9 +177,8 @@ export function PagerViewAdapter<T extends Route>({
         }
         onPageScroll={(e) => {
           const { position: p, offset: o } = e.nativeEvent;
-          // cập nhật đồng thời RN Animated và Reanimated
-          position.setValue(p);
-          offset.setValue(o);
+          // position.setValue(p);
+          // offset.setValue(o);
           positionReanimated.value = p;
           offsetReanimated.value = o;
         }}
