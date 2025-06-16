@@ -1,12 +1,6 @@
-import * as React from 'react';
-import { Animated } from 'react-native';
+// eslint-disable-next-line import-x/no-extraneous-dependencies
+import { useSharedValue } from 'react-native-reanimated';
 
 export function useAnimatedValue(initialValue: number) {
-  const lazyRef = React.useRef<Animated.Value>(undefined);
-
-  if (lazyRef.current === undefined) {
-    lazyRef.current = new Animated.Value(initialValue);
-  }
-
-  return lazyRef.current as Animated.Value;
+  return useSharedValue(initialValue);
 }

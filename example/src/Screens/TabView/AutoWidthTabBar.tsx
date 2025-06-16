@@ -50,7 +50,7 @@ export const AutoWidthTabBar = () => {
   const windowWidth = Dimensions.get('window').width;
   const [routes] = React.useState([
     { key: 'article', title: 'Article' },
-    { key: 'contacts', title: 'Contacts' },
+    { key: 'contacts', title: 'Contacts haha' },
     {
       key: 'albums',
       title: 'Albums123121 312312 long long long and more long long ',

@@ -1,6 +1,5 @@
 import * as React from 'react';
 import {
-  Animated,
   type GestureResponderEvent,
   Keyboard,
   PanResponder,
@@ -10,9 +9,7 @@ import {
 } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 // eslint-disable-next-line import-x/no-extraneous-dependencies
-import * as Reanimated from 'react-native-reanimated';
-// eslint-disable-next-line import-x/no-extraneous-dependencies
-import { useSharedValue } from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import type {
@@ -32,9 +29,6 @@ type Props<T extends Route> = PagerProps & {
   navigationState: NavigationState<T>;
   children: (
     props: EventEmitterProps & {
-      // Animated value which represents the state of current index
-      // It can include fractional digits as it represents the intermediate value
-      position: Animated.AnimatedInterpolation<number>;
       // Function to actually render the content of the pager
       // The parent component takes care of rendering
       render: (children: React.ReactNode) => React.ReactNode;
@@ -49,7 +43,7 @@ type Props<T extends Route> = PagerProps & {
 const DEAD_ZONE = 12;
 
 const DefaultTransitionSpec = {
-  timing: Animated.spring,
+  timing: Reanimated.spring,
   stiffness: 1000,
   damping: 500,
   mass: 3,
@@ -87,6 +81,8 @@ export function PanResponderAdapter<T extends Route>({
 
   const swipeVelocityThreshold = 0.15;
   const swipeDistanceThreshold = layout.width / 1.75;
+
+  console.log('index =>>>>>>>>>>>>>>>>>>>>>>>>>>', index);
 
   const jumpToIndex = useLatestCallback(
     (index: number, animate = animationEnabled) => {
