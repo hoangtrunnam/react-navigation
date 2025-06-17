@@ -13,34 +13,35 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+
 import type {
+  LocaleDirection,
   NavigationState,
   Route,
   SceneRendererProps,
-} from 'react-native-tab-view';
-
+} from './types';
 import { useAnimatedValue } from './useAnimatedValue';
 
 export type GetTabWidth = (index: number) => number;
 
 export type Props<T extends Route> = SceneRendererProps & {
   navigationState: NavigationState<T>;
-  width?: 'auto' | `${number}%` | number;
-  getTabWidth?: GetTabWidth;
-  direction?: 'ltr' | 'rtl';
+  width: 'auto' | `${number}%` | number;
+  getTabWidth: GetTabWidth;
+  direction: LocaleDirection;
   style?: StyleProp<ViewStyle>;
   gap?: number;
   children?: React.ReactNode;
 };
 
 export function TabBarIndicator<T extends Route>({
-  getTabWidth = () => 0,
+  getTabWidth,
   layout,
   navigationState,
   reanimatedPosition,
-  width = 'auto',
-  direction = 'ltr',
-  gap = 0,
+  width,
+  direction,
+  gap,
   style,
   children,
 }: Props<T>) {
@@ -57,20 +58,25 @@ export function TabBarIndicator<T extends Route>({
     : true;
 
   React.useEffect(() => {
-    if (!isIndicatorShown.current && isWidthDynamic && indicatorVisible) {
-      isIndicatorShown.current = true;
-      opacity.value = withTiming(1, {
-        duration: 150,
-        easing: Easing.in(Easing.linear),
-      });
-    }
+    const fadeInIndicator = () => {
+      if (!isIndicatorShown.current && isWidthDynamic && indicatorVisible) {
+        isIndicatorShown.current = true;
+
+        opacity.value = withTiming(1, {
+          duration: 150,
+          easing: Easing.in(Easing.linear),
+        });
+      }
+    };
+
+    fadeInIndicator();
   }, [indicatorVisible, isWidthDynamic, opacity]);
 
   const { routes } = navigationState;
 
+  // Pre-calculate input/output ranges
   const inputRange = routes.map((_, i) => i);
 
-  // calculate translateX based on the actual width of each tab
   const translateXOutputRange = React.useMemo(() => {
     return routes.reduce<number[]>((acc, _, i) => {
       if (typeof width === 'number') {
@@ -86,7 +92,7 @@ export function TabBarIndicator<T extends Route>({
           sumTabWidth + getTabWidth(i) / 2 + (gap ? gap * i : 0) - width / 2,
         ];
       } else {
-        // Auto width case - calculate position from the start of each tab
+        // Auto width - position at start of each tab
         if (i === 0) return [0];
         return [...acc, acc[i - 1] + getTabWidth(i - 1) + (gap ?? 0)];
       }
@@ -105,7 +111,7 @@ export function TabBarIndicator<T extends Route>({
       };
     }
 
-    const transform = [];
+    const styles: any = {};
 
     if (layout.width && routes.length > 1) {
       const translateX = interpolate(
@@ -115,12 +121,14 @@ export function TabBarIndicator<T extends Route>({
         Extrapolation.CLAMP
       );
 
-      const finalTranslateX = direction === 'rtl' ? -translateX : translateX;
-      transform.push({ translateX: finalTranslateX });
+      styles.transform = [
+        {
+          translateX: translateX * (direction === 'rtl' ? -1 : 1),
+        },
+      ];
     }
 
     if (width === 'auto') {
-      // use animated width instead of scaleX
       const animatedWidth =
         routes.length > 1
           ? interpolate(
@@ -131,30 +139,25 @@ export function TabBarIndicator<T extends Route>({
             )
           : widthOutputRange[0] || 1;
 
-      return {
-        width: animatedWidth,
-        transform,
-        opacity: opacity.value,
-      };
+      styles.width = animatedWidth;
+      styles.opacity = opacity.value;
+    } else {
+      styles.width = width;
     }
 
-    return {
-      width: width,
-      transform,
-    };
+    return styles;
   }, [
     reanimatedPosition,
     layout.width,
     routes.length,
     inputRange,
     translateXOutputRange,
+    widthOutputRange,
     direction,
     width,
-    widthOutputRange,
     opacity,
   ]);
 
-  // Handle web-specific styling - cũng cần update cho width
   const webStyle = React.useMemo(() => {
     if (Platform.OS === 'web' && width === 'auto' && reanimatedPosition) {
       const currentWidth = interpolate(
@@ -172,7 +175,7 @@ export function TabBarIndicator<T extends Route>({
 
       return {
         width: currentWidth,
-        left: direction === 'rtl' ? -currentTranslateX : currentTranslateX,
+        left: currentTranslateX * (direction === 'rtl' ? -1 : 1),
       };
     }
     return {};
@@ -185,22 +188,25 @@ export function TabBarIndicator<T extends Route>({
     width,
   ]);
 
-  const finalStyle = [
-    styles.indicator,
-    Platform.OS === 'web' && width === 'auto' ? webStyle : animatedStyle,
-    style,
-  ];
-
-  return <Animated.View style={finalStyle}>{children}</Animated.View>;
+  return (
+    <Animated.View
+      style={[
+        styles.indicator,
+        Platform.OS === 'web' && width === 'auto' ? webStyle : animatedStyle,
+        style,
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
 }
 
 const styles = StyleSheet.create({
   indicator: {
-    backgroundColor: 'blue',
+    backgroundColor: '#ffeb3b',
     position: 'absolute',
     start: 0,
     bottom: 0,
     height: 2,
-    borderRadius: 100,
   },
 });
