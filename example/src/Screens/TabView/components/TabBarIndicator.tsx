@@ -60,7 +60,7 @@ export function TabBarIndicator<T extends Route>({
       isIndicatorShown.current = true;
       opacity.value = withTiming(1, {
         duration: 150,
-        easing: Easing.in(Easing.linear),
+        easing: Easing.linear,
       });
     }
   }, [indicatorVisible, isWidthDynamic, opacity]);

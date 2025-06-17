@@ -81,13 +81,17 @@ export const AutoWidthTabBar = () => {
       gap={20}
       direction={direction}
       renderIndicator={customTabInficator}
-      renderTabBarItem={(props) => (
-        <CustomTabBarItem
-          {...props}
-          labelStyle={[styles.labelStyle, { maxWidth: windowWidth - 100 }]}
-          labelProps={{ numberOfLines: 1 }}
-        />
-      )}
+      renderTabBarItem={(itemProps) => {
+        const { key, ...restProps } = itemProps;
+        return (
+          <CustomTabBarItem
+            key={key}
+            {...restProps}
+            labelStyle={[styles.labelStyle, { maxWidth: windowWidth - 100 }]}
+            labelProps={{ numberOfLines: 1 }}
+          />
+        );
+      }}
     />
   );
 

@@ -10,6 +10,11 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { type SceneRendererProps, TabView } from 'react-native-tab-view';
 
 type Route = {
@@ -33,8 +38,10 @@ const ALBUMS: { [key: string]: ImageRequireSource } = {
   'Lost Horizons': require('../../../assets/album-art-08.jpg'),
 };
 
-const Scene = ({ route, position, layout, index, length }: Props) => {
-  const coverflowStyle: any = React.useMemo(() => {
+const Scene = ({ route, reanimatedPosition, layout, index, length }: Props) => {
+  const coverflowStyle = useAnimatedStyle(() => {
+    if (!reanimatedPosition) return {};
+
     const { width } = layout;
 
     const inputRange = Array.from({ length }, (_, i) => i);
@@ -56,27 +63,30 @@ const Scene = ({ route, position, layout, index, length }: Props) => {
       }
     });
 
-    const translateX = position.interpolate({
+    const translateX = interpolate(
+      reanimatedPosition.value,
       inputRange,
-      outputRange: translateOutputRange,
-      extrapolate: 'clamp',
-    });
-    const scale = position.interpolate({
+      translateOutputRange,
+      Extrapolation.CLAMP
+    );
+    const scale = interpolate(
+      reanimatedPosition.value,
       inputRange,
-      outputRange: scaleOutputRange,
-      extrapolate: 'clamp',
-    });
-    const opacity = position.interpolate({
+      scaleOutputRange,
+      Extrapolation.CLAMP
+    );
+    const opacity = interpolate(
+      reanimatedPosition.value,
       inputRange,
-      outputRange: opacityOutputRange,
-      extrapolate: 'clamp',
-    });
+      opacityOutputRange,
+      Extrapolation.CLAMP
+    );
 
     return {
       transform: [{ translateX }, { scale }],
       opacity,
     };
-  }, [index, layout, length, position]);
+  }, [index, layout, length, reanimatedPosition]);
 
   return (
     <Animated.View style={[styles.page, coverflowStyle]}>
