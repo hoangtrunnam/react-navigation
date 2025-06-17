@@ -5,6 +5,7 @@ import {
   type PressableAndroidRippleConfig,
   type StyleProp,
   StyleSheet,
+  type TextProps,
   View,
   type ViewStyle,
 } from 'react-native';
@@ -35,6 +36,7 @@ export type Props<T extends Route> = TabDescriptor<T> & {
   defaultTabWidth?: number;
   style: StyleProp<ViewStyle>;
   android_ripple?: PressableAndroidRippleConfig;
+  labelProps?: TextProps;
 };
 
 const DEFAULT_ACTIVE_COLOR = 'rgba(255, 255, 255, 1)';
@@ -83,6 +85,7 @@ const TabBarItemInternal = <T extends Route>({
   labelAllowFontScaling,
   route,
   reanimatedPosition,
+  labelProps = {},
 }: TabBarItemInternalProps<T>) => {
   const labelColorFromStyle = StyleSheet.flatten(labelStyle || {}).color;
 
@@ -182,6 +185,7 @@ const TabBarItemInternal = <T extends Route>({
         })
       ) : (
         <TabBarItemLabel
+          {...labelProps}
           color={focused ? activeColor : inactiveColor}
           icon={icon}
           label={labelText}
@@ -190,12 +194,13 @@ const TabBarItemInternal = <T extends Route>({
       ),
     [
       customlabel,
+      labelProps,
       activeColor,
+      inactiveColor,
       labelStyle,
       labelText,
       labelAllowFontScaling,
       route,
-      inactiveColor,
       icon,
     ]
   );

@@ -125,7 +125,7 @@ const getComputedTabWidth = (
   gap?: number
 ) => {
   if (flattenedWidth === 'auto') {
-    return tabWidths[routes[index].key] || 0;
+    return tabWidths[routes[index]?.key] || 0;
   }
 
   switch (typeof flattenedWidth) {

@@ -1,10 +1,10 @@
 import React from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { StyleProp, TextProps, ViewStyle } from 'react-native';
 import { StyleSheet } from 'react-native';
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import Animated from 'react-native-reanimated';
 
-interface TabBarItemLabelProps {
+interface TabBarItemLabelProps extends TextProps {
   color: string;
   label?: string;
   style: StyleProp<ViewStyle>;
@@ -12,13 +12,14 @@ interface TabBarItemLabelProps {
 }
 
 export const TabBarItemLabel = React.memo(
-  ({ color, label, style, icon }: TabBarItemLabelProps) => {
+  ({ color, label, style, icon, ...rest }: TabBarItemLabelProps) => {
     if (!label) {
       return null;
     }
 
     return (
       <Animated.Text
+        {...rest}
         style={[
           styles.label,
           icon ? { marginTop: 0 } : null,
