@@ -2,7 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text } from '@react-navigation/elements';
 import { useLocale } from '@react-navigation/native';
 import * as React from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   SceneMap,
@@ -26,6 +31,73 @@ const renderScene = SceneMap({
   albums: () => <Albums />,
 });
 
+const inputRange = [0, 0.48, 0.49, 0.51, 0.52, 1, 1.48, 1.49, 1.51, 1.52, 2];
+
+const AnimatedIndicator = ({
+  reanimatedPosition,
+  getTabWidth,
+  gap,
+  width,
+  style,
+  direction,
+  navigationState,
+}: TabBarIndicatorProps<Route> & { direction: string }) => {
+  const tabWidths = React.useMemo(() => {
+    return navigationState.routes.map((_, index) => getTabWidth(index));
+  }, [getTabWidth, navigationState.routes]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    if (!reanimatedPosition) return {};
+
+    const scale = interpolate(
+      reanimatedPosition.value,
+      inputRange,
+      inputRange.map((x) => (Math.trunc(x) === x ? 2 : 0.1)),
+      Extrapolation.CLAMP
+    );
+
+    const opacity = interpolate(
+      reanimatedPosition.value,
+      inputRange,
+      inputRange.map((x) => {
+        const d = x - Math.trunc(x);
+        return d === 0.49 || d === 0.51 ? 0 : 1;
+      }),
+      Extrapolation.CLAMP
+    );
+
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  }, [reanimatedPosition]);
+
+  const containerStyle = useAnimatedStyle(() => {
+    if (!reanimatedPosition) return {};
+
+    const translateX = interpolate(
+      reanimatedPosition.value,
+      inputRange,
+      inputRange.map((x) => {
+        const i = Math.round(x);
+        const tabWidth = tabWidths[i] || 0;
+        return (i * tabWidth + i * (gap ?? 0)) * (direction === 'rtl' ? -1 : 1);
+      }),
+      Extrapolation.CLAMP
+    );
+
+    return {
+      transform: [{ translateX }],
+    };
+  }, [reanimatedPosition, tabWidths, gap, direction]);
+
+  return (
+    <Animated.View style={[style, styles.container, { width }, containerStyle]}>
+      <Animated.View style={[styles.indicator, animatedStyle]} />
+    </Animated.View>
+  );
+};
+
 export const CustomIndicator = () => {
   const { direction } = useLocale();
   const insets = useSafeAreaInsets();
@@ -46,47 +118,7 @@ export const CustomIndicator = () => {
   ]);
 
   const renderIndicator = (props: TabBarIndicatorProps<Route>) => {
-    const { position, getTabWidth, gap, width, style } = props;
-    const inputRange = [
-      0, 0.48, 0.49, 0.51, 0.52, 1, 1.48, 1.49, 1.51, 1.52, 2,
-    ];
-
-    const scale = position.interpolate({
-      inputRange,
-      outputRange: inputRange.map((x) => (Math.trunc(x) === x ? 2 : 0.1)),
-    });
-
-    const opacity = position.interpolate({
-      inputRange,
-      outputRange: inputRange.map((x) => {
-        const d = x - Math.trunc(x);
-        return d === 0.49 || d === 0.51 ? 0 : 1;
-      }),
-    });
-
-    const translateX = position.interpolate({
-      inputRange: inputRange,
-      outputRange: inputRange.map((x) => {
-        const i = Math.round(x);
-        return (
-          (i * getTabWidth(i) + i * (gap ?? 0)) * (direction === 'rtl' ? -1 : 1)
-        );
-      }),
-    });
-
-    return (
-      <Animated.View
-        style={[
-          style,
-          styles.container,
-          { width, transform: [{ translateX }] },
-        ]}
-      >
-        <Animated.View
-          style={[styles.indicator, { opacity, transform: [{ scale }] } as any]}
-        />
-      </Animated.View>
-    );
+    return <AnimatedIndicator {...props} direction={direction} />;
   };
 
   const renderBadge = React.useCallback(

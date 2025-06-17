@@ -22,7 +22,6 @@ import type {
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
 
-// const AnimatedViewPager = Animated.createAnimatedComponent(ViewPager);
 const AnimatedViewPager = Reanimated.createAnimatedComponent(ViewPager);
 
 type Props<T extends Route> = PagerProps & {
@@ -137,16 +136,15 @@ export function PagerViewAdapter<T extends Route>({
 
   const memoizedPositionReanimated = useDerivedValue(() => {
     const targetValue = positionReanimated.value + offsetReanimated.value;
-
-    // Chỉ apply spring khi có sự thay đổi lớn (jump)
     const diff = Math.abs(targetValue - smoothPosition.value);
     if (diff > 0.03) {
-      // Threshold để detect jump
-      smoothPosition.value = withSpring(targetValue, {
-        damping: 50,
-        stiffness: 400,
-        mass: 0.5,
-      });
+      if (!isNaN(targetValue) && targetValue !== undefined) {
+        smoothPosition.value = withSpring(targetValue, {
+          damping: 50,
+          stiffness: 400,
+          mass: 0.5,
+        });
+      }
     } else {
       smoothPosition.value = targetValue;
     }

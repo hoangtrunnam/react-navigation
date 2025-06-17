@@ -64,7 +64,7 @@ export function TabBarIndicator<T extends Route>({
 
         opacity.value = withTiming(1, {
           duration: 150,
-          easing: Easing.in(Easing.linear),
+          easing: Easing.linear,
         });
       }
     };
