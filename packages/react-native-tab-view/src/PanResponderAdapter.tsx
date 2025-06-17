@@ -38,7 +38,7 @@ type Props<T extends Route> = PagerProps & {
       // Callback to call when switching the tab
       // The tab switch animation is performed even if the index in state is unchanged
       jumpTo: (key: string) => void;
-      reanimatedPosition?: SharedValue<number>;
+      reanimatedPosition: SharedValue<number>;
     }
   ) => React.ReactElement;
 };

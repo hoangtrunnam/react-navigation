@@ -62,7 +62,7 @@ export type Listener = (value: number) => void;
 
 export type SceneRendererProps = {
   layout: Layout;
-  reanimatedPosition?: SharedValue<number>;
+  reanimatedPosition: SharedValue<number>;
   jumpTo: (key: string) => void;
 };
 

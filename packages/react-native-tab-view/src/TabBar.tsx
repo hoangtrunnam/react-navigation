@@ -60,7 +60,7 @@ export type Props<T extends Route> = SceneRendererProps & {
   gap?: number;
   testID?: string;
   android_ripple?: PressableAndroidRippleConfig;
-  reanimatedPosition?: SharedValue<number>;
+  reanimatedPosition: SharedValue<number>;
 };
 
 const Separator = ({ width }: { width: number }) => {
