@@ -9,7 +9,12 @@ import {
 } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 // eslint-disable-next-line import-x/no-extraneous-dependencies
-import Animated, { useSharedValue } from 'react-native-reanimated';
+import Animated, {
+  runOnJS,
+  useDerivedValue,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import type {
@@ -20,7 +25,6 @@ import type {
   PagerProps,
   Route,
 } from './types';
-import { useAnimatedValue } from './useAnimatedValue';
 
 type Props<T extends Route> = PagerProps & {
   layout: Layout;
@@ -42,7 +46,6 @@ type Props<T extends Route> = PagerProps & {
 const DEAD_ZONE = 12;
 
 const DefaultTransitionSpec = {
-  timing: Reanimated.spring,
   stiffness: 1000,
   damping: 500,
   mass: 3,
@@ -64,7 +67,6 @@ export function PanResponderAdapter<T extends Route>({
 }: Props<T>) {
   const { routes, index } = navigationState;
 
-  const panX = useAnimatedValue(0);
   const panXReanimated = useSharedValue(0);
   const panXOffset = useSharedValue(0);
 
@@ -80,48 +82,26 @@ export function PanResponderAdapter<T extends Route>({
   const swipeVelocityThreshold = 0.15;
   const swipeDistanceThreshold = layout.width / 1.75;
 
-  console.log('index =>>>>>>>>>>>>>>>>>>>>>>>>>>', index);
-
   const jumpToIndex = useLatestCallback(
     (index: number, animate = animationEnabled) => {
       const offset = -index * layoutRef.current.width;
 
-      const { timing, ...transitionConfig } = DefaultTransitionSpec;
-
       if (animate) {
-        Animated.parallel([
-          timing(panX, {
-            ...transitionConfig,
-            toValue: offset,
-            useNativeDriver: false,
-          }),
-        ]).start(({ finished }) => {
-          if (finished) {
-            onIndexChangeRef.current(index);
-            pendingIndexRef.current = undefined;
-          }
-        });
-
-        // Animate panXReanimated using Reanimated
-        panXReanimated.value = Reanimated.withSpring(
+        panXReanimated.value = withSpring(
           offset,
-          {
-            damping: transitionConfig.damping,
-            mass: transitionConfig.mass,
-            stiffness: transitionConfig.stiffness,
-            overshootClamping: transitionConfig.overshootClamping,
-          },
+          DefaultTransitionSpec,
           (finished) => {
             if (finished) {
-              // Reanimated.runOnJS(onIndexChangeRef.current)(index);
-              // Reanimated.runOnJS(() => { pendingIndexRef.current = undefined; })();
+              runOnJS(onIndexChangeRef.current)(index);
+              runOnJS(() => {
+                pendingIndexRef.current = undefined;
+              })();
             }
           }
         );
 
         pendingIndexRef.current = index;
       } else {
-        panX.setValue(offset);
         panXReanimated.value = offset;
         onIndexChangeRef.current(index);
         pendingIndexRef.current = undefined;
@@ -137,9 +117,8 @@ export function PanResponderAdapter<T extends Route>({
 
   React.useEffect(() => {
     const offset = -navigationStateRef.current.index * layout.width;
-    panX.setValue(offset);
     panXReanimated.value = offset;
-  }, [layout.width, panX, panXReanimated]);
+  }, [layout.width, panXReanimated]);
 
   React.useEffect(() => {
     if (keyboardDismissMode === 'auto') {
@@ -187,13 +166,7 @@ export function PanResponderAdapter<T extends Route>({
       Keyboard.dismiss();
     }
 
-    panX.stopAnimation();
-    Reanimated.cancelAnimation(panXReanimated);
     panXOffset.value = panXReanimated.value;
-    // @ts-expect-error: _value is private, but docs use it as well
-    panX.setOffset(panX._value);
-    // @ts-expect-error: _value is private, but docs use it as well
-    panXReanimated.value = panX._value;
   };
 
   const respondToGesture = (
@@ -204,17 +177,14 @@ export function PanResponderAdapter<T extends Route>({
       layoutDirection === 'rtl' ? -gestureState.dx : gestureState.dx;
 
     if (
-      // swiping left
       (diffX > 0 && index <= 0) ||
-      // swiping right
       (diffX < 0 && index >= routes.length - 1)
     ) {
       return;
     }
 
     if (layout.width) {
-      // @ts-expect-error: _offset is private, but docs use it as well
-      const position = (panX._offset + diffX) / -layout.width;
+      const position = (panXOffset.value + diffX) / -layout.width;
       const next =
         position > index ? Math.ceil(position) : Math.floor(position);
 
@@ -222,17 +192,15 @@ export function PanResponderAdapter<T extends Route>({
         listenersRef.current.forEach((listener) => listener(next));
       }
     }
-    panX.setValue(diffX);
-    // @ts-expect-error: _offset is private, but docs use it as well
-    panXReanimated.value = panX._offset + diffX;
+
+    // Direct assignment
+    panXReanimated.value = panXOffset.value + diffX;
   };
 
   const finishGesture = (
     _: GestureResponderEvent,
     gestureState: PanResponderGestureState
   ) => {
-    panX.flattenOffset();
-
     panXReanimated.value =
       panXOffset.value + (panXReanimated.value - panXOffset.value);
     panXOffset.value = 0;
@@ -306,25 +274,19 @@ export function PanResponderAdapter<T extends Route>({
   });
 
   const maxTranslate = layout.width * (routes.length - 1);
-  const translateX = Animated.multiply(
-    panX.interpolate({
-      inputRange: [-maxTranslate, 0],
-      outputRange: [-maxTranslate, 0],
-      extrapolate: 'clamp',
-    }),
-    layoutDirection === 'rtl' ? -1 : 1
-  );
+  const translateX = useDerivedValue(() => {
+    const interpolatedValue = Math.max(
+      -maxTranslate,
+      Math.min(0, panXReanimated.value)
+    );
+    return interpolatedValue * (layoutDirection === 'rtl' ? -1 : 1);
+  }, [maxTranslate, layoutDirection]);
 
-  const position = React.useMemo(
-    () => (layout.width ? Animated.divide(panX, -layout.width) : null),
-    [layout.width, panX]
-  );
-  const reanimatedPosition = Reanimated.useDerivedValue(() => {
+  const reanimatedPosition = useDerivedValue(() => {
     return layout.width ? panXReanimated.value / -layout.width : index;
   }, [layout.width, panXReanimated, index]);
 
   return children({
-    position: position ?? new Animated.Value(index),
     reanimatedPosition,
     addEnterListener,
     jumpTo,

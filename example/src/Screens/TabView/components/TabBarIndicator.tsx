@@ -119,7 +119,6 @@ export function TabBarIndicator<T extends Route>({
     }
 
     if (width === 'auto') {
-      // use animated width instead of scaleX
       const animatedWidth =
         routes.length > 1
           ? interpolate(
@@ -200,6 +199,6 @@ const styles = StyleSheet.create({
     start: 0,
     bottom: 0,
     height: 2,
-    borderRadius: 100,
+    borderRadius: 16,
   },
 });
