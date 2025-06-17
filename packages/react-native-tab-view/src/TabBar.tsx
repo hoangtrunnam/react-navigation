@@ -524,7 +524,6 @@ export function TabBar<T extends Route>({
       const props = {
         ...rest,
         key: route.key,
-        position,
         reanimatedPosition,
         route,
         navigationState,
@@ -556,7 +555,6 @@ export function TabBar<T extends Route>({
       );
     },
     [
-      position,
       reanimatedPosition,
       navigationState,
       options,

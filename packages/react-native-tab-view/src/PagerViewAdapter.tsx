@@ -8,6 +8,7 @@ import {
   type SharedValue,
   useDerivedValue,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
 // import Reanimated from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
@@ -68,6 +69,7 @@ export function PagerViewAdapter<T extends Route>({
   const positionReanimated = useSharedValue(index);
   const offset = useAnimatedValue(0);
   const offsetReanimated = useSharedValue(0);
+  const smoothPosition = useSharedValue(index);
 
   React.useEffect(() => {
     navigationStateRef.current = navigationState;
@@ -156,7 +158,18 @@ export function PagerViewAdapter<T extends Route>({
   );
 
   const memoizedPositionReanimated = useDerivedValue(() => {
-    return positionReanimated.value + offsetReanimated.value;
+    const targetValue = positionReanimated.value + offsetReanimated.value;
+
+    // Always use spring animation by removing the diff check
+    if (!isNaN(targetValue) && targetValue !== undefined) {
+      smoothPosition.value = withSpring(targetValue, {
+        damping: 50,
+        stiffness: 400,
+        mass: 0.5,
+      });
+    }
+
+    return smoothPosition.value;
   }, [positionReanimated, offsetReanimated]);
 
   return children({
