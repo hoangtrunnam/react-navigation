@@ -1,6 +1,6 @@
 /* eslint-disable import-x/no-extraneous-dependencies */
 import * as React from 'react';
-import { Keyboard, StyleSheet } from 'react-native';
+import { Animated, Keyboard, StyleSheet } from 'react-native';
 import ViewPager, {
   type PageScrollStateChangedNativeEvent,
 } from 'react-native-pager-view';
@@ -10,7 +10,6 @@ import {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import Reanimated from 'react-native-reanimated';
 import useLatestCallback from 'use-latest-callback';
 
 import type {
@@ -22,7 +21,7 @@ import type {
 } from './types';
 import { useAnimatedValue } from './useAnimatedValue';
 
-const AnimatedViewPager = Reanimated.createAnimatedComponent(ViewPager);
+const AnimatedViewPager = Animated.createAnimatedComponent(ViewPager);
 
 type Props<T extends Route> = PagerProps & {
   onIndexChange: (index: number) => void;
