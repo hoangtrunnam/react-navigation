@@ -23,7 +23,7 @@ import { TabBarItemLabel } from './TabBarItemLabel';
 import type { NavigationState, Route, TabDescriptor } from './types';
 
 export type Props<T extends Route> = TabDescriptor<T> & {
-  reanimatedPosition?: SharedValue<number>;
+  reanimatedPosition: SharedValue<number>;
   route: T;
   navigationState: NavigationState<T>;
   activeColor?: string;

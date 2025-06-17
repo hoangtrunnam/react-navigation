@@ -30,7 +30,7 @@ type Props<T extends Route> = PagerProps & {
   children: (
     props: EventEmitterProps & {
       // Reanimated shared value which represents the position
-      reanimatedPosition?: SharedValue<number>;
+      reanimatedPosition: SharedValue<number>;
       // Function to actually render the content of the pager
       // The parent component takes care of rendering
       render: (children: React.ReactNode) => React.ReactNode;
