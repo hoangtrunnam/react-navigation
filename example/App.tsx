@@ -16,4 +16,8 @@ LogBox.ignoreLogs([
 
 Asset.loadAsync(Assets);
 
-registerRootComponent(() => <App />);
+registerRootComponent(() => (
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+));
