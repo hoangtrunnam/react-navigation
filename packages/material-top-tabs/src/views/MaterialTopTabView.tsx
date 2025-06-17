@@ -67,8 +67,8 @@ export function MaterialTopTabView({
           target: state.key,
         });
       }}
-      renderScene={({ route, position }) => (
-        <TabAnimationContext.Provider value={{ position }}>
+      renderScene={({ route, reanimatedPosition }) => (
+        <TabAnimationContext.Provider value={{ reanimatedPosition }}>
           {descriptors[route.key].render()}
         </TabAnimationContext.Provider>
       )}
