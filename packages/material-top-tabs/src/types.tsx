@@ -13,12 +13,12 @@ import type {
 } from '@react-navigation/native';
 import type React from 'react';
 import type {
-  Animated,
   PressableAndroidRippleConfig,
   StyleProp,
   TextStyle,
   ViewStyle,
 } from 'react-native';
+import type { SharedValue } from 'react-native-reanimated';
 import type {
   SceneRendererProps,
   TabBar,
@@ -316,7 +316,7 @@ export type MaterialTopTabBarProps = SceneRendererProps & {
 };
 
 export type MaterialTopTabAnimationContext = {
-  position: Animated.AnimatedInterpolation<number>;
+  reanimatedPosition: SharedValue<number>;
 };
 
 export type MaterialTopTabNavigatorProps = DefaultNavigatorOptions<
