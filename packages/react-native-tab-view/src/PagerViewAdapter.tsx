@@ -71,13 +71,10 @@ export function PagerViewAdapter<T extends Route>({
   ...rest
 }: Props<T>) {
   const { index } = navigationState;
-
   const listenersRef = React.useRef<Listener[]>([]);
-
   const pagerRef = React.useRef<ViewPager>(null);
   const indexRef = React.useRef<number>(index);
   const navigationStateRef = React.useRef(navigationState);
-
   const positionReanimated = useSharedValue(index);
 
   React.useEffect(() => {
@@ -156,6 +153,15 @@ export function PagerViewAdapter<T extends Route>({
     render: (children) => (
       <AnimatedViewPager
         {...rest}
+        // AnimatedViewPager with Reanimated crashes when orientation changes because:
+        // 1. When screen rotates, ViewPager is destroyed and recreated with native lifecycle
+        // 2. Reanimated still keeps references to the destroyed component
+        // 3. Layout animations still try to apply to components that no longer exist
+        // 4. Results in error: "config is not a function, it is object"
+        // 5. Should turn off: layout, exiting, entering
+        entering={undefined}
+        exiting={undefined}
+        layout={undefined}
         ref={pagerRef}
         style={[styles.container, style]}
         initialPage={index}
